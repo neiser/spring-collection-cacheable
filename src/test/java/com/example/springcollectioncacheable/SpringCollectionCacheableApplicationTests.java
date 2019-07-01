@@ -11,6 +11,8 @@ public class SpringCollectionCacheableApplicationTests {
 
 	@Test
 	public void contextLoads() {
+		// empty on purpose
 	}
+
 
 }
