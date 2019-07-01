@@ -34,6 +34,9 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Strategy implementation for parsing Spring's {@link Caching}, {@link Cacheable},
@@ -51,25 +54,22 @@ import java.util.Collection;
 public class CollectionCacheableCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
     @Override
-    @Nullable
     public Collection<CacheOperation> parseCacheAnnotations(Class<?> type) {
-        DefaultCacheConfig defaultConfig = new DefaultCacheConfig(type);
-        return parseCacheAnnotations(defaultConfig, type);
+        // @CollectionCacheable only makes sense on methods
+        return Collections.emptyList();
     }
 
     @Override
-    @Nullable
     public Collection<CacheOperation> parseCacheAnnotations(Method method) {
         DefaultCacheConfig defaultConfig = new DefaultCacheConfig(method.getDeclaringClass());
         return parseCacheAnnotations(defaultConfig, method);
     }
 
-    @Nullable
-    private Collection<CacheOperation> parseCacheAnnotations(DefaultCacheConfig cachingConfig, AnnotatedElement ae) {
-        Collection<CacheOperation> ops = parseCacheAnnotations(cachingConfig, ae, false);
+    private Collection<CacheOperation> parseCacheAnnotations(DefaultCacheConfig cachingConfig, Method method) {
+        Collection<CacheOperation> ops = parseCacheAnnotations(cachingConfig, method, false);
         if (ops != null && ops.size() > 1) {
             // More than one operation found -> local declarations override interface-declared ones...
-            Collection<CacheOperation> localOps = parseCacheAnnotations(cachingConfig, ae, true);
+            Collection<CacheOperation> localOps = parseCacheAnnotations(cachingConfig, method, true);
             if (localOps != null) {
                 return localOps;
             }
@@ -77,29 +77,30 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         return ops;
     }
 
-    @Nullable
     private Collection<CacheOperation> parseCacheAnnotations(
-            DefaultCacheConfig cachingConfig, AnnotatedElement ae, boolean localOnly) {
+            DefaultCacheConfig cachingConfig, Method method, boolean localOnly) {
 
         Collection<? extends Annotation> anns = (localOnly ?
-                AnnotatedElementUtils.getAllMergedAnnotations(ae, CollectionCacheable.class) :
-                AnnotatedElementUtils.findAllMergedAnnotations(ae, CollectionCacheable.class));
+                AnnotatedElementUtils.getAllMergedAnnotations(method, CollectionCacheable.class) :
+                AnnotatedElementUtils.findAllMergedAnnotations(method, CollectionCacheable.class));
         if (anns.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
 
         final Collection<CacheOperation> ops = new ArrayList<>(1);
         anns.stream().filter(ann -> ann instanceof CollectionCacheable).forEach(
-                ann -> ops.add(parseCollectionCacheableAnnotation(ae, cachingConfig, (CollectionCacheable) ann)));
+                ann -> ops.add(parseCollectionCacheableAnnotation(method, cachingConfig, (CollectionCacheable) ann)));
         return ops;
     }
 
     private CacheableOperation parseCollectionCacheableAnnotation(
-            AnnotatedElement ae, DefaultCacheConfig defaultConfig, CollectionCacheable collectionCacheable) {
+            Method method, DefaultCacheConfig defaultConfig, CollectionCacheable collectionCacheable) {
+
+        validateCollectionCacheableAnnotation(method);
 
         CacheableOperation.Builder builder = new CollectionCacheableOperation.Builder();
 
-        builder.setName(ae.toString());
+        builder.setName(method.toString());
         builder.setCacheNames(collectionCacheable.cacheNames());
         builder.setCondition(collectionCacheable.condition());
         builder.setUnless(collectionCacheable.unless());
@@ -110,9 +111,23 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
 
         defaultConfig.applyDefault(builder);
         CacheableOperation op = builder.build();
-        validateCacheOperation(ae, op);
+        validateCacheOperation(method, op);
 
         return op;
+    }
+
+    private void validateCollectionCacheableAnnotation(Method method) {
+        if (!method.getReturnType().isAssignableFrom(Map.class)) {
+            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                    method.toString() + "'. Method return type is not assignable from Map.");
+        }
+
+        long numberOfCollectionArguments = Stream.of(method.getParameterTypes())
+                .filter(clazz -> clazz.equals(Collection.class)).count();
+        if (numberOfCollectionArguments != 1) {
+            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                    method.toString() + "'. Did not find exactly one Collection argument");
+        }
     }
 
     /**
@@ -125,12 +140,6 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
      * @param operation the {@link CacheOperation} to validate
      */
     private void validateCacheOperation(AnnotatedElement ae, CacheOperation operation) {
-        if (StringUtils.hasText(operation.getKey()) && StringUtils.hasText(operation.getKeyGenerator())) {
-            throw new IllegalStateException("Invalid cache annotation configuration on '" +
-                    ae.toString() + "'. Both 'key' and 'keyGenerator' attributes have been set. " +
-                    "These attributes are mutually exclusive: either set the SpEL expression used to" +
-                    "compute the key at runtime or set the name of the KeyGenerator bean to use.");
-        }
         if (StringUtils.hasText(operation.getCacheManager()) && StringUtils.hasText(operation.getCacheResolver())) {
             throw new IllegalStateException("Invalid cache annotation configuration on '" +
                     ae.toString() + "'. Both 'cacheManager' and 'cacheResolver' attributes have been set. " +

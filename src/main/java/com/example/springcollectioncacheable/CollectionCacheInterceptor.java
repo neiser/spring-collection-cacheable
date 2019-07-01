@@ -39,7 +39,7 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
     private Object handleCollectionCacheable(CollectionCacheableOperation operation, Class<?> targetClass, CacheOperationInvoker invoker, Object target, Method method, Object[] invocationArgs) {
         logger.debug("Handling CollectionCacheable operation");
 
-        Collection idsArgument = injectCollectionArgument(invocationArgs);
+        Collection idsArgument = injectCollectionArgument(method, invocationArgs);
         CollectionCacheableOperationContext context = getCollectionCacheableOperationContext(operation, method, target, targetClass);
         Map<Object, Object> result = new HashMap<>();
         Iterator idIterator = idsArgument.iterator();
@@ -87,11 +87,12 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
         return null;
     }
 
-    private Collection injectCollectionArgument(Object[] invocationArgs) {
+    private Collection injectCollectionArgument(Method method, Object[] invocationArgs) {
+        Class<?>[] parameterTypes = method.getParameterTypes();
         Collection foundCollection = null;
-        for (int i = 0; i < invocationArgs.length; i++) {
+        for (int i = 0; i < parameterTypes.length; i++) {
             Object arg = invocationArgs[i];
-            if (arg instanceof Collection) {
+            if (parameterTypes[i].equals(Collection.class) && arg instanceof Collection) {
                 if (foundCollection != null) {
                     throw new IllegalStateException("Found more than one Collection argument");
                 }
