@@ -21,10 +21,10 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class MyRepositoryIntTest {
 
-    private static final String SOME_KEY_1 = "some-key-1";
-    private static final String SOME_VALUE_1 = "some-value-1";
-    private static final String SOME_KEY_2 = "some-key-2";
-    private static final String SOME_VALUE_2 = "some-value-2";
+    private static final MyId SOME_KEY_1 = new MyId("some-key-1");
+    private static final MyValue SOME_VALUE_1 = new MyValue("some-value-1");
+    private static final MyId SOME_KEY_2 = new MyId("some-key-2");
+    private static final MyValue SOME_VALUE_2 = new MyValue("some-value-2");
 
     @Autowired
     private MyRepository sut;

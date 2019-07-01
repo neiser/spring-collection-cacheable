@@ -22,13 +22,13 @@ public class MyRepository {
     }
 
     @Cacheable("myCache")
-    public String findById(String id) {
+    public MyValue findById(MyId id) {
         LOGGER.info("Getting value for id={}", id);
         return myDbRepository.findById(id);
     }
 
     @CollectionCacheable("myCache")
-    public Map<String, String> findByIds(Collection<String> ids) {
+    public Map<MyId, MyValue> findByIds(Collection<MyId> ids) {
         LOGGER.info("Getting mapped values for ids={}", ids);
         return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
     }

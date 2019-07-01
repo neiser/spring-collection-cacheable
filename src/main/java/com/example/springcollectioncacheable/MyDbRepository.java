@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MyDbRepository {
 
-    public String findById(String id) {
-        return "Value for ID=" + id;
+    public MyValue findById(MyId id) {
+        return new MyValue("Value for ID=" + id);
     }
 }
