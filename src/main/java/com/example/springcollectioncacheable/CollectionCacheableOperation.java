@@ -26,10 +26,17 @@ public class CollectionCacheableOperation extends CacheableOperation {
 
     public static class Builder extends CacheableOperation.Builder {
 
+        private boolean isFindAll;
+
+        public void setFindAll(boolean findAll) {
+            isFindAll = findAll;
+        }
+
         @Override
         protected StringBuilder getOperationDescription() {
             StringBuilder sb = super.getOperationDescription();
-            sb.append("FOR COLLECTIONS");
+            sb.append(" | isFindAll ='");
+            sb.append(this.isFindAll);
             return sb;
         }
 

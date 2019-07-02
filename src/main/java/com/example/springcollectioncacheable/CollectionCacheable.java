@@ -25,7 +25,6 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.concurrent.Callable;
 
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -121,23 +120,4 @@ public @interface CollectionCacheable {
      * @since 3.2
      */
     String unless() default "";
-
-    /**
-     * Synchronize the invocation of the underlying method if several threads are
-     * attempting to load a value for the same key. The synchronization leads to
-     * a couple of limitations:
-     * <ol>
-     * <li>{@link #unless()} is not supported</li>
-     * <li>Only one cache may be specified</li>
-     * <li>No other cache-related operation can be combined</li>
-     * </ol>
-     * This is effectively a hint and the actual cache provider that you are
-     * using may not support it in a synchronized fashion. Check your provider
-     * documentation for more details on the actual semantics.
-     *
-     * @see org.springframework.cache.Cache#get(Object, Callable)
-     * @since 4.3
-     */
-    boolean sync() default false;
-
 }

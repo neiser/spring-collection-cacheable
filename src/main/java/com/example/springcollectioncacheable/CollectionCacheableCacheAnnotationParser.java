@@ -23,7 +23,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.cache.interceptor.CacheOperation;
-import org.springframework.cache.interceptor.CacheableOperation;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
@@ -36,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Stream;
 
 /**
  * Strategy implementation for parsing Spring's {@link Caching}, {@link Cacheable},
@@ -93,12 +91,12 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         return ops;
     }
 
-    private CacheableOperation parseCollectionCacheableAnnotation(
+    private CollectionCacheableOperation parseCollectionCacheableAnnotation(
             Method method, DefaultCacheConfig defaultConfig, CollectionCacheable collectionCacheable) {
 
         validateCollectionCacheableAnnotation(method);
 
-        CacheableOperation.Builder builder = new CollectionCacheableOperation.Builder();
+        CollectionCacheableOperation.Builder builder = new CollectionCacheableOperation.Builder();
 
         builder.setName(method.toString());
         builder.setCacheNames(collectionCacheable.cacheNames());
@@ -107,10 +105,10 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         builder.setKeyGenerator(collectionCacheable.keyGenerator());
         builder.setCacheManager(collectionCacheable.cacheManager());
         builder.setCacheResolver(collectionCacheable.cacheResolver());
-        builder.setSync(collectionCacheable.sync());
+        builder.setFindAll(method.getParameterTypes().length == 0);
 
         defaultConfig.applyDefault(builder);
-        CacheableOperation op = builder.build();
+        CollectionCacheableOperation op = builder.build();
         validateCacheOperation(method, op);
 
         return op;
@@ -121,13 +119,15 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
             throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
                     method.toString() + "'. Method return type is not assignable from Map.");
         }
-
-        long numberOfCollectionArguments = Stream.of(method.getParameterTypes())
-                .filter(clazz -> clazz.equals(Collection.class)).count();
-        if (numberOfCollectionArguments != 1) {
-            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
-                    method.toString() + "'. Did not find exactly one Collection argument");
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes.length == 0) {
+            return;
         }
+        if (parameterTypes.length == 1 && parameterTypes[0].equals(Collection.class)) {
+            return;
+        }
+        throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                method.toString() + "'. Did not find exactly one Collection argument");
     }
 
     /**
