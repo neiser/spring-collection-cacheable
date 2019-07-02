@@ -127,7 +127,7 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
             return;
         }
         throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
-                method.toString() + "'. Did not find exactly one Collection argument");
+                method.toString() + "'. Did not find zero or one Collection argument.");
     }
 
     /**

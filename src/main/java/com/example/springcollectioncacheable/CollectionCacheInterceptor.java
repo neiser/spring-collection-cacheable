@@ -38,9 +38,17 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
 
     private Object handleCollectionCacheable(CollectionCacheableOperation operation, Class<?> targetClass, CacheOperationInvoker invoker, Object target, Method method, Object[] invocationArgs) {
         logger.debug("Handling CollectionCacheable operation");
-
-        Collection idsArgument = injectCollectionArgument(method, invocationArgs);
         CollectionCacheableOperationContext context = getCollectionCacheableOperationContext(operation, method, target, targetClass);
+
+        if (operation.isFindAll()) {
+            Map<?, ?> uncachedResult = invokeMethod(invoker);
+            for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
+                putToCache(entry.getKey(), entry.getValue(), context);
+            }
+            return uncachedResult;
+        }
+
+        Collection idsArgument = injectCollectionArgument(invocationArgs);
         Map<Object, Object> result = new HashMap<>();
         Iterator idIterator = idsArgument.iterator();
         while (idIterator.hasNext()) {
@@ -87,23 +95,13 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
         return null;
     }
 
-    private Collection injectCollectionArgument(Method method, Object[] invocationArgs) {
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        Collection foundCollection = null;
-        for (int i = 0; i < parameterTypes.length; i++) {
-            Object arg = invocationArgs[i];
-            if (parameterTypes[i].equals(Collection.class) && arg instanceof Collection) {
-                if (foundCollection != null) {
-                    throw new IllegalStateException("Found more than one Collection argument");
-                }
-                foundCollection = new LinkedList<>((Collection<?>) arg);
-                invocationArgs[i] = foundCollection;
-            }
+    private Collection injectCollectionArgument(Object[] invocationArgs) {
+        if (invocationArgs.length == 1 && invocationArgs[0] instanceof Collection) {
+            Collection foundCollection = new LinkedList<>((Collection<?>) invocationArgs[0]);
+            invocationArgs[0] = foundCollection;
+            return foundCollection;
         }
-        if (foundCollection == null) {
-            throw new IllegalStateException("Found no Collection argument");
-        }
-        return foundCollection;
+        throw new IllegalStateException("Did not find exactly one Collection argument");
     }
 
     @Nullable

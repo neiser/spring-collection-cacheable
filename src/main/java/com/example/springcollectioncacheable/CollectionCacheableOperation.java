@@ -19,9 +19,15 @@ package com.example.springcollectioncacheable;
 import org.springframework.cache.interceptor.CacheableOperation;
 
 public class CollectionCacheableOperation extends CacheableOperation {
+    private final boolean isFindAll;
 
     public CollectionCacheableOperation(CollectionCacheableOperation.Builder b) {
         super(b);
+        this.isFindAll = b.isFindAll;
+    }
+
+    public boolean isFindAll() {
+        return isFindAll;
     }
 
     public static class Builder extends CacheableOperation.Builder {

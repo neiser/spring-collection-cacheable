@@ -32,4 +32,10 @@ public class MyRepository {
         LOGGER.info("Getting mapped values for ids={}", ids);
         return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
     }
+
+    @CollectionCacheable("myCache")
+    public Map<MyId, MyValue> findAll() {
+        LOGGER.info("Getting all values");
+        return myDbRepository.findAll();
+    }
 }

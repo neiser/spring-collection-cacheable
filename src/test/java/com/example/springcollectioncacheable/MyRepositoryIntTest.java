@@ -1,5 +1,6 @@
 package com.example.springcollectioncacheable;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,6 +14,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,4 +99,15 @@ public class MyRepositoryIntTest {
         verify(myDbRepository, times(1)).findById(SOME_KEY_1);
     }
 
+
+    @Test
+    public void findAll() throws Exception {
+        when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1));
+
+        // the findAll() fills the cache already!
+        assertThat(sut.findAll()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+        assertThat(sut.findByIds(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+
+        verify(myDbRepository, never()).findById(any());
+    }
 }
