@@ -33,9 +33,21 @@ public class MyRepository {
         return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
     }
 
+    @CollectionCacheable(value = "myCache", condition = "#ids.size() < 3")
+    public Map<MyId, MyValue> findByIdsWithCondition(Collection<MyId> ids) {
+        LOGGER.info("Conditionally getting mapped values for ids={}", ids);
+        return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
+    }
+
     @CollectionCacheable("myCache")
     public Map<MyId, MyValue> findAll() {
         LOGGER.info("Getting all values");
+        return myDbRepository.findAll();
+    }
+
+    @CollectionCacheable(value = "myCache", condition = "#result.size() < 2")
+    public Map<MyId, MyValue> findAllWithCondition() {
+        LOGGER.info("Conditionally getting all values");
         return myDbRepository.findAll();
     }
 }

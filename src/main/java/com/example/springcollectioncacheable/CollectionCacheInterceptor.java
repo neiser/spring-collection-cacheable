@@ -37,18 +37,21 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
     }
 
     private Object handleCollectionCacheable(CollectionCacheableOperation operation, Class<?> targetClass, CacheOperationInvoker invoker, Object target, Method method, Object[] invocationArgs) {
-        logger.debug("Handling CollectionCacheable operation");
         CollectionCacheableOperationContext context = getCollectionCacheableOperationContext(operation, method, target, targetClass);
 
         if (operation.isFindAll()) {
             Map<?, ?> uncachedResult = invokeMethod(invoker);
-            for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
-                putToCache(entry.getKey(), entry.getValue(), context);
+            if (context.isConditionPassing(uncachedResult)) {
+                putUncachedResultToCache(uncachedResult, context);
             }
             return uncachedResult;
         }
 
         Collection idsArgument = injectCollectionArgument(invocationArgs);
+        if (!context.isConditionPassingWithArgument(idsArgument)) {
+            return invokeMethod(invoker);
+        }
+
         Map<Object, Object> result = new HashMap<>();
         Iterator idIterator = idsArgument.iterator();
         while (idIterator.hasNext()) {
@@ -63,16 +66,17 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
         if (!idsArgument.isEmpty()) {
             Map<?, ?> uncachedResult = invokeMethod(invoker);
             result.putAll(uncachedResult);
-            for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
-                putToCache(entry.getKey(), entry.getValue(), context);
-            }
+            putUncachedResultToCache(uncachedResult, context);
         }
         return result;
     }
 
-    private void putToCache(Object key, Object value, CollectionCacheableOperationContext context) {
-        for (Cache cache : context.getCaches()) {
-            doPut(cache, key, value);
+    private void putUncachedResultToCache(Map<?, ?> uncachedResult, CollectionCacheableOperationContext context) {
+
+        for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
+            for (Cache cache : context.getCaches()) {
+                doPut(cache, entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -140,6 +144,16 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
         public Object generateKeyFromSingleArgument(Object arg) {
             currentArgs[0] = arg;
             return generateKey(NO_RESULT);
+        }
+
+        @Override
+        public boolean isConditionPassing(Object result) {
+            return super.isConditionPassing(result);
+        }
+
+        public boolean isConditionPassingWithArgument(Object arg) {
+            currentArgs[0] = arg;
+            return super.isConditionPassing(NO_RESULT);
         }
 
         @Override

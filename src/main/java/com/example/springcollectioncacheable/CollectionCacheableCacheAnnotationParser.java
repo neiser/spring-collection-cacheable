@@ -94,7 +94,7 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
     private CollectionCacheableOperation parseCollectionCacheableAnnotation(
             Method method, DefaultCacheConfig defaultConfig, CollectionCacheable collectionCacheable) {
 
-        validateCollectionCacheableAnnotation(method);
+        validateMethodSignature(method);
 
         CollectionCacheableOperation.Builder builder = new CollectionCacheableOperation.Builder();
 
@@ -113,7 +113,7 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         return op;
     }
 
-    private void validateCollectionCacheableAnnotation(Method method) {
+    private void validateMethodSignature(Method method) {
         if (!method.getReturnType().isAssignableFrom(Map.class)) {
             throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
                     method.toString() + "'. Method return type is not assignable from Map.");
