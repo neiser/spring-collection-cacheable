@@ -1,5 +1,6 @@
-package com.example.springcollectioncacheable;
+package com.example.springcollectioncacheable.test;
 
+import com.example.springcollectioncacheable.CollectionCacheable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.example.springcollectioncacheable;
+package com.example.springcollectioncacheable.test;
 
 import java.util.Objects;
 import java.util.StringJoiner;

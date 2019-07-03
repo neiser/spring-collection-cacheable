@@ -1,15 +1,23 @@
 package com.example.springcollectioncacheable;
 
+import com.example.springcollectioncacheable.test.MyDbRepository;
+import com.example.springcollectioncacheable.test.MyId;
+import com.example.springcollectioncacheable.test.MyRepository;
+import com.example.springcollectioncacheable.test.MyValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Objects;
@@ -23,8 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
-public class MyRepositoryIntTest {
+@SpringBootTest(classes = {CollectionCacheableIntTest.TestConfig.class})
+public class CollectionCacheableIntTest {
 
     private static final MyId SOME_KEY_1 = new MyId("some-key-1");
     private static final MyValue SOME_VALUE_1 = new MyValue("some-value-1");
@@ -167,5 +175,13 @@ public class MyRepositoryIntTest {
         assertThat(sut.findByIds(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
 
         verify(myDbRepository, never()).findById(any());
+    }
+
+    @Configuration
+    @EnableCaching
+    @EnableAutoConfiguration
+    @Import({MyRepository.class, CollectionCacheableProxyCachingConfiguration.class})
+    public static class TestConfig {
+
     }
 }

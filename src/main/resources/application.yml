@@ -1,3 +1,0 @@
-logging.level:
-  com.example.springcollectioncacheable: DEBUG
-  org.springframework.cache.interceptor: TRACE
