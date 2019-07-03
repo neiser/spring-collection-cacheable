@@ -101,7 +101,6 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         builder.setName(method.toString());
         builder.setCacheNames(collectionCacheable.cacheNames());
         builder.setCondition(collectionCacheable.condition());
-        builder.setUnless(collectionCacheable.unless());
         builder.setKeyGenerator(collectionCacheable.keyGenerator());
         builder.setCacheManager(collectionCacheable.cacheManager());
         builder.setCacheResolver(collectionCacheable.cacheResolver());
