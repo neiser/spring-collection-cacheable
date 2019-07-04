@@ -34,7 +34,7 @@ public class CollectionCacheableProxyCachingConfiguration extends AbstractCachin
 
     @Bean
     public CacheInterceptor collectionCacheInterceptor() {
-        CacheInterceptor interceptor = new CollectionCacheInterceptor();
+        CacheInterceptor interceptor = new CollectionCacheableCacheInterceptor();
         interceptor.configure(this.errorHandler, this.keyGenerator, this.cacheResolver, this.cacheManager);
         interceptor.setCacheOperationSource(cacheOperationSource);
         return interceptor;

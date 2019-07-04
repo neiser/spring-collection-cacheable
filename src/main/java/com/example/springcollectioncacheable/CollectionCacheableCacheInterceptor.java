@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class CollectionCacheInterceptor extends CacheInterceptor {
+public class CollectionCacheableCacheInterceptor extends CacheInterceptor {
 
     private static final Object NO_RESULT = new Object();
 
