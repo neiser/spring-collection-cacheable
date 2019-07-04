@@ -72,10 +72,10 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
     }
 
     private void putUncachedResultToCache(Map<?, ?> uncachedResult, CollectionCacheableOperationContext context) {
-
         for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
+            Object key = context.generateKeyFromSingleArgument(entry.getKey());
             for (Cache cache : context.getCaches()) {
-                doPut(cache, entry.getKey(), entry.getValue());
+                doPut(cache, key, entry.getValue());
             }
         }
     }
@@ -143,7 +143,7 @@ public class CollectionCacheInterceptor extends CacheInterceptor {
 
         public Object generateKeyFromSingleArgument(Object arg) {
             currentArgs[0] = arg;
-            return generateKey(NO_RESULT);
+            return generateKey(arg); // provide arg as result as well for findAll case
         }
 
         @Override

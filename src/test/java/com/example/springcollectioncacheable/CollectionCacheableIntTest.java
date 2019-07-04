@@ -143,6 +143,24 @@ public class CollectionCacheableIntTest {
     }
 
     @Test
+    public void findByIdsWithKey() throws Exception {
+        when(myDbRepository.findById(SOME_KEY_1)).thenReturn(SOME_VALUE_1);
+        when(myDbRepository.findById(SOME_KEY_2)).thenReturn(SOME_VALUE_2);
+
+        assertThat(sut.findByIdsWithKey(ImmutableSet.of(SOME_KEY_1)))
+                .containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+        assertThat(sut.findByIdsWithKey(ImmutableSet.of(SOME_KEY_1)))
+                .containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+
+        assertThat(sut.findByIdWithKey(SOME_KEY_2)).isEqualTo(SOME_VALUE_2);
+        assertThat(sut.findByIdsWithKey(ImmutableSet.of(SOME_KEY_2)))
+                .containsOnly(entry(SOME_KEY_2, SOME_VALUE_2));
+
+        verify(myDbRepository, times(1)).findById(SOME_KEY_1);
+        verify(myDbRepository, times(1)).findById(SOME_KEY_2);
+    }
+
+    @Test
     public void findAll() throws Exception {
         when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1));
 
@@ -165,7 +183,6 @@ public class CollectionCacheableIntTest {
         verify(myDbRepository, times(1)).findById(SOME_KEY_1);
     }
 
-
     @Test
     public void findAllWithCondition_fulfilled() throws Exception {
         when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1));
@@ -173,6 +190,17 @@ public class CollectionCacheableIntTest {
         // the findAllWithCondition() fills the cache already, as the condition is met
         assertThat(sut.findAllWithCondition()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
         assertThat(sut.findByIds(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+
+        verify(myDbRepository, never()).findById(any());
+    }
+
+    @Test
+    public void findAllWithKey() throws Exception {
+        when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1));
+
+        // the findAllWithCondition() fills the cache already, as the condition is met
+        assertThat(sut.findAllWithKey()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+        assertThat(sut.findByIdsWithKey(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
 
         verify(myDbRepository, never()).findById(any());
     }

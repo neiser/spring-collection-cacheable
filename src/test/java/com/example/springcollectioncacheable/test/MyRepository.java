@@ -22,9 +22,15 @@ public class MyRepository {
         this.myDbRepository = myDbRepository;
     }
 
-    @Cacheable("myCache")
+    @Cacheable(cacheNames = "myCache")
     public MyValue findById(MyId id) {
         LOGGER.info("Getting value for id={}", id);
+        return myDbRepository.findById(id);
+    }
+
+    @Cacheable(cacheNames = "myCache", key = "#id.id")
+    public MyValue findByIdWithKey(MyId id) {
+        LOGGER.info("Getting value with key for id={}", id);
         return myDbRepository.findById(id);
     }
 
@@ -34,9 +40,15 @@ public class MyRepository {
         return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
     }
 
-    @CollectionCacheable(value = "myCache", condition = "#ids.size() < 3")
+    @CollectionCacheable(cacheNames = "myCache", condition = "#ids.size() < 3")
     public Map<MyId, MyValue> findByIdsWithCondition(Collection<MyId> ids) {
-        LOGGER.info("Conditionally getting mapped values for ids={}", ids);
+        LOGGER.info("Getting mapped values with condition for ids={}", ids);
+        return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
+    }
+
+    @CollectionCacheable(cacheNames = "myCache", key = "#p0.id")
+    public Map<MyId, MyValue> findByIdsWithKey(Collection<MyId> ids) {
+        LOGGER.info("Getting mapped values with key for ids={}", ids);
         return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
     }
 
@@ -46,9 +58,15 @@ public class MyRepository {
         return myDbRepository.findAll();
     }
 
-    @CollectionCacheable(value = "myCache", condition = "#result.size() < 2")
+    @CollectionCacheable(cacheNames = "myCache", condition = "#result.size() < 2")
     public Map<MyId, MyValue> findAllWithCondition() {
-        LOGGER.info("Conditionally getting all values");
+        LOGGER.info("Getting all values with condition");
+        return myDbRepository.findAll();
+    }
+
+    @CollectionCacheable(cacheNames = "myCache", key = "#result.id")
+    public Map<MyId, MyValue> findAllWithKey() {
+        LOGGER.info("Getting all values with condition");
         return myDbRepository.findAll();
     }
 }
