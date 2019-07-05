@@ -31,6 +31,8 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -94,7 +96,8 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
     private CollectionCacheableOperation parseCollectionCacheableAnnotation(
             Method method, DefaultCacheConfig defaultConfig, CollectionCacheable collectionCacheable) {
 
-        validateMethodSignature(method);
+        boolean isFindAll = checkFindAll(method);
+        validateMethodSignature(isFindAll, method);
 
         CollectionCacheableOperation.Builder builder = new CollectionCacheableOperation.Builder();
 
@@ -106,47 +109,68 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         builder.setCacheManager(collectionCacheable.cacheManager());
         builder.setCacheResolver(collectionCacheable.cacheResolver());
         builder.setUnless(collectionCacheable.unless());
-        builder.setFindAll(method.getParameterTypes().length == 0);
+        builder.setFindAll(isFindAll);
 
         defaultConfig.applyDefault(builder);
         CollectionCacheableOperation op = builder.build();
-        validateCacheOperation(method, op);
+        validateCollectionCacheableOperation(method, op);
 
         return op;
     }
 
-    private void validateMethodSignature(Method method) {
+    private boolean checkFindAll(Method method) {
+        return method.getParameterTypes().length == 0;
+    }
+
+    private void validateMethodSignature(boolean isFindAll, Method method) {
         if (!method.getReturnType().isAssignableFrom(Map.class)) {
             throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
                     method.toString() + "'. Method return type is not assignable from Map.");
         }
+        if (isFindAll) {
+            return;
+        }
         Class<?>[] parameterTypes = method.getParameterTypes();
-        if (parameterTypes.length == 0) {
+        if (parameterTypes.length != 1 || !parameterTypes[0].equals(Collection.class)) {
+            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                    method.toString() + "'. Did not find zero or one Collection argument.");
+        }
+        Type[] genericParameterTypes = method.getGenericParameterTypes();
+        if (genericParameterTypes.length != 1 || !(genericParameterTypes[0] instanceof ParameterizedType)) {
+            // assume method is not generic
             return;
         }
-        if (parameterTypes.length == 1 && parameterTypes[0].equals(Collection.class)) {
+        if (!(method.getGenericReturnType() instanceof ParameterizedType)) {
+            // assume method is not generic
             return;
         }
-        throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
-                method.toString() + "'. Did not find zero or one Collection argument.");
+        ParameterizedType parameterizedCollection = (ParameterizedType) genericParameterTypes[0];
+        if (parameterizedCollection.getActualTypeArguments().length != 1) {
+            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                    method.toString() + "'. Parameterized collection does not have exactly one type argument.");
+        }
+        ParameterizedType parameterizedMap = (ParameterizedType) method.getGenericReturnType();
+        if (parameterizedMap.getActualTypeArguments().length != 2) {
+            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                    method.toString() + "'. Parameterized map does not have exactly two type arguments.");
+        }
+        if (!parameterizedMap.getActualTypeArguments()[0].equals(parameterizedCollection.getActualTypeArguments()[0])) {
+            throw new IllegalStateException("Invalid CollectionCacheable annotation configuration on '" +
+                    method.toString() + "'. The Map key type should be equal to the collection type.");
+        }
     }
 
-    /**
-     * Validates the specified {@link CacheOperation}.
-     * <p>Throws an {@link IllegalStateException} if the state of the operation is
-     * invalid. As there might be multiple sources for default values, this ensure
-     * that the operation is in a proper state before being returned.
-     *
-     * @param ae        the annotated element of the cache operation
-     * @param operation the {@link CacheOperation} to validate
-     */
-    private void validateCacheOperation(AnnotatedElement ae, CacheOperation operation) {
+    private void validateCollectionCacheableOperation(AnnotatedElement ae, CollectionCacheableOperation operation) {
         if (StringUtils.hasText(operation.getCacheManager()) && StringUtils.hasText(operation.getCacheResolver())) {
             throw new IllegalStateException("Invalid cache annotation configuration on '" +
                     ae.toString() + "'. Both 'cacheManager' and 'cacheResolver' attributes have been set. " +
                     "These attributes are mutually exclusive: the cache manager is used to configure a" +
                     "default cache resolver if none is set. If a cache resolver is set, the cache manager" +
                     "won't be used.");
+        }
+        if (operation.isFindAll() && StringUtils.hasText(operation.getCondition())) {
+            throw new IllegalStateException("Invalid cache annotation configuration on '" +
+                    ae.toString() + "'. Cannot use 'condition' on 'findAll'-like methods.");
         }
     }
 
