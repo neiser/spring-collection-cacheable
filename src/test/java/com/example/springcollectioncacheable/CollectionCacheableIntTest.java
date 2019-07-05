@@ -132,7 +132,7 @@ public class CollectionCacheableIntTest {
         when(myDbRepository.findById(SOME_KEY_1)).thenReturn(SOME_VALUE_1);
         when(myDbRepository.findById(SOME_KEY_2)).thenReturn(SOME_VALUE_2);
 
-        // the findAll() uses the cache as the condition is met
+        // the findByIdsWithCondition() uses the cache as the condition is met
         assertThat(sut.findById(SOME_KEY_1)).isEqualTo(SOME_VALUE_1);
         assertThat(sut.findByIdsWithCondition(ImmutableSet.of(SOME_KEY_1, SOME_KEY_2)))
                 .containsOnly(entry(SOME_KEY_1, SOME_VALUE_1), entry(SOME_KEY_2, SOME_VALUE_2));
@@ -140,6 +140,35 @@ public class CollectionCacheableIntTest {
 
         verify(myDbRepository, times(1)).findById(SOME_KEY_1);
         verify(myDbRepository, times(1)).findById(SOME_KEY_2);
+    }
+
+    @Test
+    public void findByIdsWithUnless_notFulfilled() throws Exception {
+        when(myDbRepository.findById(SOME_KEY_1)).thenReturn(SOME_VALUE_1);
+
+        // the findByIdsWithUnless() fills the cache as the unless is not met
+        assertThat(sut.findByIdsWithUnless(ImmutableSet.of(SOME_KEY_1)))
+                .containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+        assertThat(sut.findById(SOME_KEY_1)).isEqualTo(SOME_VALUE_1);
+
+        verify(myDbRepository, times(1)).findById(SOME_KEY_1);
+    }
+
+
+    @Test
+    public void findByIdsWithUnless_fulfilled() throws Exception {
+        when(myDbRepository.findById(SOME_KEY_1)).thenReturn(SOME_VALUE_1);
+        when(myDbRepository.findById(SOME_KEY_2)).thenReturn(SOME_VALUE_2);
+        when(myDbRepository.findById(SOME_KEY_3)).thenReturn(SOME_VALUE_3);
+
+        // the findByIdsWithUnless() does not fill the cache as the unless is met
+        assertThat(sut.findById(SOME_KEY_1)).isEqualTo(SOME_VALUE_1);
+        assertThat(sut.findByIdsWithUnless(ImmutableSet.of(SOME_KEY_1, SOME_KEY_2, SOME_KEY_3)))
+                .containsOnly(entry(SOME_KEY_1, SOME_VALUE_1), entry(SOME_KEY_2, SOME_VALUE_2), entry(SOME_KEY_3, SOME_VALUE_3));
+        assertThat(sut.findById(SOME_KEY_2)).isEqualTo(SOME_VALUE_2);
+
+        verify(myDbRepository, times(1)).findById(SOME_KEY_1);
+        verify(myDbRepository, times(2)).findById(SOME_KEY_2);
     }
 
     @Test
@@ -172,33 +201,32 @@ public class CollectionCacheableIntTest {
     }
 
     @Test
-    public void findAllWithCondition_notFulfilled() throws Exception {
-        when(myDbRepository.findById(SOME_KEY_1)).thenReturn(SOME_VALUE_1);
-        when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1, SOME_KEY_2, SOME_VALUE_2));
-
-        // the findAllWithCondition() won't fill the cache as condition is not met
-        assertThat(sut.findAllWithCondition()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1), entry(SOME_KEY_2, SOME_VALUE_2));
-        assertThat(sut.findByIds(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
-
-        verify(myDbRepository, times(1)).findById(SOME_KEY_1);
-    }
-
-    @Test
-    public void findAllWithCondition_fulfilled() throws Exception {
+    public void findAllWithUnless_notFulfilled() throws Exception {
         when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1));
 
-        // the findAllWithCondition() fills the cache already, as the condition is met
-        assertThat(sut.findAllWithCondition()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+        // the findAllWithUnless() fills the cache as the unless is not met
+        assertThat(sut.findAllWithUnless()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
         assertThat(sut.findByIds(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
 
         verify(myDbRepository, never()).findById(any());
     }
 
     @Test
+    public void findAllWithUnless_fulfilled() throws Exception {
+        when(myDbRepository.findById(SOME_KEY_1)).thenReturn(SOME_VALUE_1);
+        when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1, SOME_KEY_2, SOME_VALUE_2));
+
+        // the findAllWithUnless() does not fill the cache already, as the unless is met
+        assertThat(sut.findAllWithUnless()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1), entry(SOME_KEY_2, SOME_VALUE_2));
+        assertThat(sut.findByIds(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
+
+        verify(myDbRepository, times(1)).findById(SOME_KEY_1);
+    }
+
+    @Test
     public void findAllWithKey() throws Exception {
         when(myDbRepository.findAll()).thenReturn(ImmutableMap.of(SOME_KEY_1, SOME_VALUE_1));
 
-        // the findAllWithCondition() fills the cache already, as the condition is met
         assertThat(sut.findAllWithKey()).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
         assertThat(sut.findByIdsWithKey(ImmutableSet.of(SOME_KEY_1))).containsOnly(entry(SOME_KEY_1, SOME_VALUE_1));
 

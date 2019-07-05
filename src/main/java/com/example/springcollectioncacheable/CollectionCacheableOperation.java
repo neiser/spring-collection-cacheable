@@ -16,9 +16,9 @@
 
 package com.example.springcollectioncacheable;
 
-import org.springframework.cache.interceptor.CacheOperation;
+import org.springframework.cache.interceptor.CachePutOperation;
 
-public class CollectionCacheableOperation extends CacheOperation {
+public class CollectionCacheableOperation extends CachePutOperation {
 
     private final boolean isFindAll;
 
@@ -31,7 +31,7 @@ public class CollectionCacheableOperation extends CacheOperation {
         return isFindAll;
     }
 
-    public static class Builder extends CacheOperation.Builder {
+    public static class Builder extends CachePutOperation.Builder {
 
         private boolean isFindAll;
 

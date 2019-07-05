@@ -41,9 +41,7 @@ public class CollectionCacheableCacheInterceptor extends CacheInterceptor {
 
         if (operation.isFindAll()) {
             Map<?, ?> uncachedResult = invokeMethod(invoker);
-            if (context.isConditionPassing(uncachedResult)) {
-                putUncachedResultToCache(uncachedResult, context);
-            }
+            putUncachedResultToCache(uncachedResult, context);
             return uncachedResult;
         }
 
@@ -72,10 +70,12 @@ public class CollectionCacheableCacheInterceptor extends CacheInterceptor {
     }
 
     private void putUncachedResultToCache(Map<?, ?> uncachedResult, CollectionCacheableOperationContext context) {
-        for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
-            Object key = context.generateKeyFromSingleArgument(entry.getKey());
-            for (Cache cache : context.getCaches()) {
-                doPut(cache, key, entry.getValue());
+        if (context.canPutToCache(uncachedResult)) {
+            for (Map.Entry<?, ?> entry : uncachedResult.entrySet()) {
+                Object key = context.generateKeyFromSingleArgument(entry.getKey());
+                for (Cache cache : context.getCaches()) {
+                    doPut(cache, key, entry.getValue());
+                }
             }
         }
     }
@@ -149,6 +149,12 @@ public class CollectionCacheableCacheInterceptor extends CacheInterceptor {
         @Override
         public boolean isConditionPassing(Object result) {
             return super.isConditionPassing(result);
+        }
+
+        @Override
+        protected boolean canPutToCache(Object result) {
+            currentArgs[0] = null;
+            return super.canPutToCache(result);
         }
 
         public boolean isConditionPassingWithArgument(Object arg) {

@@ -46,6 +46,12 @@ public class MyRepository {
         return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
     }
 
+    @CollectionCacheable(cacheNames = "myCache", unless = "#result.size() > 1")
+    public Map<MyId, MyValue> findByIdsWithUnless(Collection<MyId> ids) {
+        LOGGER.info("Getting mapped values with unless for ids={}", ids);
+        return ids.stream().collect(Collectors.toMap(x -> x, myDbRepository::findById));
+    }
+
     @CollectionCacheable(cacheNames = "myCache", key = "#p0.id")
     public Map<MyId, MyValue> findByIdsWithKey(Collection<MyId> ids) {
         LOGGER.info("Getting mapped values with key for ids={}", ids);
@@ -58,9 +64,9 @@ public class MyRepository {
         return myDbRepository.findAll();
     }
 
-    @CollectionCacheable(cacheNames = "myCache", condition = "#result.size() < 2")
-    public Map<MyId, MyValue> findAllWithCondition() {
-        LOGGER.info("Getting all values with condition");
+    @CollectionCacheable(cacheNames = "myCache", unless = "#result.size() > 1")
+    public Map<MyId, MyValue> findAllWithUnless() {
+        LOGGER.info("Getting all values with unless");
         return myDbRepository.findAll();
     }
 

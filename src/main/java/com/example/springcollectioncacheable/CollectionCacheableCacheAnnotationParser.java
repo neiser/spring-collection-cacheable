@@ -105,6 +105,7 @@ public class CollectionCacheableCacheAnnotationParser implements CacheAnnotation
         builder.setKeyGenerator(collectionCacheable.keyGenerator());
         builder.setCacheManager(collectionCacheable.cacheManager());
         builder.setCacheResolver(collectionCacheable.cacheResolver());
+        builder.setUnless(collectionCacheable.unless());
         builder.setFindAll(method.getParameterTypes().length == 0);
 
         defaultConfig.applyDefault(builder);
